@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="NeuroLog">
-<title>NeuroLog v8.2 | Residency Dashboard</title>
+<title>NeuroLog | Neurosurgical Case Log</title>
 <style>
 body{font:16px Arial,sans-serif;background:#f3f5f9;color:#172b4d;margin:0}
 header{background:#172b4d;color:white;padding:22px} header h1{margin:0;font-size:30px} header p{margin:6px 0 0;opacity:.85}
@@ -132,17 +132,17 @@ input,select,textarea{border-radius:10px}
 @media(max-width:700px){.brand{gap:9px}.brand-logo{width:43px;height:43px;border-radius:11px}.brand h1{font-size:25px}.brand p{max-width:200px}}
 @media(display-mode:standalone){body{overscroll-behavior-y:contain}}
 </style>
-<link rel="apple-touch-icon" href="/neurolog-apple-icon-v82.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/neurolog-apple-icon-v82.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/neurolog-icon-v82-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/neurolog-icon-v82-512.png">
-<link rel="manifest" href="/manifest.webmanifest?v=8.2">
+<link rel="apple-touch-icon" href="./neurolog-apple-icon-v82.png">
+<link rel="apple-touch-icon" sizes="180x180" href="./neurolog-apple-icon-v82.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./neurolog-icon-v82-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./neurolog-icon-v82-512.png">
+<link rel="manifest" href="./manifest.webmanifest?v=8.3">
 </head>
 <body>
-<header><div class="header-inner"><div class="brand"><img class="brand-logo" src="/neurolog-icon-v82-192.png" alt="NeuroLog gold-outlined teal brain logo" width="56" height="56"><div><h1>NeuroLog</h1><p>Neurosurgery residency · Operative case log</p></div></div><button class="theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()" aria-label="Switch to dark mode" aria-pressed="false">☾ Dark mode</button></div></header>
+<header><div class="header-inner"><div class="brand"><img class="brand-logo" src="./neurolog-icon-v82-192.png" alt="NeuroLog gold-outlined teal brain logo" width="56" height="56"><div><h1>NeuroLog</h1><p>Neurosurgery residency · Operative case log</p></div></div><button class="theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()" aria-label="Switch to dark mode" aria-pressed="false">☾ Dark mode</button></div></header>
 <main>
 <div class="notice">
-Prototype only. Use fictional test data. Records are stored in this browser and are not encrypted by this prototype. Do not enter real patient information.
+Privacy notice: Use fictional or fully de-identified test data only. Records are stored locally in this browser without encryption. Do not enter identifiable patient information.
 </div>
 
 <nav class="app-nav" aria-label="Main navigation">
@@ -172,7 +172,7 @@ Prototype only. Use fictional test data. Records are stored in this browser and 
 <form id="caseForm">
 <input type="hidden" id="editId">
 <div class="grid">
-<div class="field"><label for="initials">Patient initials / test code</label><input id="initials" placeholder="TEST-01" autocomplete="off"><p class="hint">Prototype: use fictional identifiers only.</p></div>
+<div class="field"><label for="initials">Patient initials / test code</label><input id="initials" placeholder="TEST-01" autocomplete="off"><p class="hint">Use fictional identifiers only.</p></div>
 <div class="field"><label for="dob">Date of birth</label><input id="dob" type="date"></div>
 <div class="field"><label for="date">Surgery date *</label><input id="date" type="date" required></div>
 <div class="field"><label for="attending">Attending *</label><select id="attending" required></select><button type="button" class="secondary" onclick="addAttending()">+ Add attending</button></div>
@@ -530,7 +530,7 @@ return name==="Almujuela"||name==="Almuela"?"Almojuela":name;
 function validateImport(data){
 if(!data||typeof data!=="object"||Array.isArray(data)||!Array.isArray(data.cases)||!Array.isArray(data.staff))
 throw Error("Not a recognized NeuroLog backup: expected cases and staff arrays.");
-if(data.cases.length>50000)throw Error("This backup is too large for this browser prototype.");
+if(data.cases.length>50000)throw Error("This backup is too large for this browser.");
 const ids=new Set();
 const imported=data.cases.map((c,i)=>{
 if(!c||typeof c!=="object"||Array.isArray(c))throw Error("Invalid case at position "+(i+1)+".");
@@ -610,7 +610,7 @@ init();
 </script>
 <script>
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js?v=8.2').catch(err => console.warn('Offline setup unavailable:',err)));
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=8.3').catch(err => console.warn('Offline setup unavailable:',err)));
 }
 </script>
 </body>

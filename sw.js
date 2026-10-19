@@ -1,4 +1,4 @@
-const CACHE = 'neurolog-v8.2-static-1';
+const CACHE = 'neurolog-v8.3-static-1';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './neurolog-icon-v82-192.png', './neurolog-icon-v82-512.png', './neurolog-icon-v82-maskable.png', './neurolog-apple-icon-v82.png'];
 self.addEventListener('install', event => {event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));});
 self.addEventListener('activate', event => {event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('neurolog-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));});

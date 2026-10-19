@@ -2,7 +2,7 @@
   "id": "./",
   "name": "NeuroLog \u2014 Neurosurgery Case Log",
   "short_name": "NeuroLog",
-  "description": "Offline-capable residency operative case log prototype. Fictional data only.",
+  "description": "Offline-capable neurosurgical operative case log. Use fictional or de-identified test data only.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
