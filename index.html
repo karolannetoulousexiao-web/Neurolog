@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#30343B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NeuroLog">
+<title>NeuroLog v8.2 | Residency Dashboard</title>
+<style>
+body{font:16px Arial,sans-serif;background:#f3f5f9;color:#172b4d;margin:0}
+header{background:#172b4d;color:white;padding:22px} header h1{margin:0;font-size:30px} header p{margin:6px 0 0;opacity:.85}
+main{max-width:950px;margin:22px auto;padding:0 14px}
+.card{background:white;padding:20px;border-radius:12px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+label{display:block;font-size:13px;font-weight:bold;margin-bottom:5px}
+input,select,textarea{box-sizing:border-box;width:100%;padding:10px;border:1px solid #ccd3df;border-radius:7px;font:inherit}
+.field{margin-bottom:12px}.wide{grid-column:1/-1}
+button{padding:10px 14px;border:0;border-radius:7px;background:#315f9f;color:white;font-weight:bold;cursor:pointer;margin:3px}
+button.secondary{background:#e5ebf4;color:#172b4d} button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #75a6e9;outline-offset:2px} details{border:1px solid #d6dfeb;border-radius:10px;padding:14px;margin:14px 0;background:#f8faff} summary{font-weight:700;cursor:pointer;padding:5px} .hint{font-size:12px;color:#586b83;margin:5px 0} .actions{display:flex;gap:8px;flex-wrap:wrap} .actions button{min-height:42px} .field[hidden],details[hidden]{display:none} @media(max-width:600px){main{margin:12px auto;padding:0 10px}.card{padding:15px}button,input,select,textarea{min-height:44px}nav button{flex:1 1 40%}header{padding:17px}}
+.dashboard-controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:12px 0 20px}.dashboard-controls .field{min-width:155px;flex:1;margin:0}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-bottom:22px}.kpi{background:#edf2fa;border:1px solid #dbe5f3;border-radius:12px;padding:16px}.kpi strong{display:block;font-size:28px;margin-bottom:5px}.kpi span{font-size:13px;color:#41536c}
+.dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:16px}.chart-card{border:1px solid #e0e7f0;border-radius:12px;padding:16px;min-width:0}.chart-card h3{margin:0 0 14px}.chart-note{color:#64748b;font-size:12px}.bar-line{display:grid;grid-template-columns:minmax(92px,135px) 1fr 38px;align-items:center;gap:9px;margin:10px 0;font-size:12px}.bar-label{overflow-wrap:anywhere}.bar-track{height:15px;background:#eef2f7;border-radius:20px;overflow:hidden}.bar-fill{height:100%;background:#3668a6;border-radius:20px}.bar-count{text-align:right;font-variant-numeric:tabular-nums}
+.monthly-chart{display:flex;align-items:end;gap:8px;min-height:190px;border-bottom:1px solid #d9e1eb;padding-top:12px;overflow-x:auto}.month-col{flex:1 0 34px;min-width:34px;display:flex;flex-direction:column;align-items:center;justify-content:end;height:180px;gap:5px}.month-bar{width:70%;max-width:40px;background:#477cb6;border-radius:5px 5px 0 0;min-height:0}.month-value{font-size:11px;color:#42536c}.month-label{font-size:11px;color:#53657e;white-space:nowrap}
+.role-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;margin:8px 0 14px}.role-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}.stacked-row{margin:13px 0}.stacked-title{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}.stacked-track{display:flex;height:17px;background:#edf2fa;border-radius:5px;overflow:hidden}.stacked-segment{height:100%}.empty-chart{color:#63748a;font-size:13px;padding:25px 0}.dashboard-summary{margin-top:14px;color:#475569;font-size:13px}
+nav{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
+.panel{display:none}.panel.active{display:block}
+.stat{display:inline-block;background:#edf2fa;padding:15px;border-radius:9px;margin:5px;min-width:110px}
+.stat strong{display:block;font-size:25px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid #ddd;padding:9px;text-align:left}
+th{background:#edf2fa}
+.tablewrap{overflow-x:auto}
+.notice{background:#fff4d7;padding:12px;border-radius:8px;font-size:13px;margin-bottom:15px}
+
+/* NeuroLog v6: charcoal + teal, accessible light/dark palette */
+:root{
+  color-scheme:light;
+  --bg:#F5F7FA;--surface:#FFFFFF;--surface-alt:#EAF5F4;
+  --ink:#30343B;--muted:#53666B;--line:#D7E4E4;
+  --primary:#30343B;--accent:#238D87;--accent-bright:#36A6A0;
+  --button-text:#FFFFFF;--secondary:#E3F1F0;--notice:#FFF5DF;
+  --track:#DCEDEB;--focus:#36A6A0;
+  --teal-1:#12625F;--teal-2:#218A85;--teal-3:#36A6A0;--teal-4:#65BDB6;--teal-5:#92D4CB;--teal-6:#B8E7E0;
+}
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#161D21;--surface:#242D32;--surface-alt:#263C3E;
+  --ink:#EDF7F6;--muted:#B6CFCE;--line:#3D5456;
+  --primary:#30343B;--accent:#36A6A0;--accent-bright:#60C6BC;
+  --button-text:#102526;--secondary:#304648;--notice:#3D3528;
+  --track:#355152;--focus:#73DCD0;
+  --teal-1:#B2E6DF;--teal-2:#87D6CC;--teal-3:#60C6BC;--teal-4:#41A99F;--teal-5:#318B85;--teal-6:#246F6C;
+}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:var(--primary);color:#fff;border-bottom:3px solid var(--accent-bright)}
+.card,.chart-card{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.card{box-shadow:0 3px 18px rgba(0,0,0,.035)}
+button{background:var(--accent);color:var(--button-text)}
+button.secondary{background:var(--secondary);color:var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--focus)}
+input,select,textarea{background:var(--surface);color:var(--ink);border-color:var(--line)}
+details{background:var(--surface-alt);border-color:var(--line)}
+.kpi,.stat{background:var(--surface-alt);border-color:var(--line)}
+.kpi span,.hint,.chart-note,.empty-chart,.dashboard-summary,.month-value,.month-label{color:var(--muted)}
+.bar-track,.stacked-track{background:var(--track)}
+.bar-fill{background:linear-gradient(90deg,var(--teal-2),var(--teal-4))}
+.month-bar{background:linear-gradient(180deg,var(--teal-4),var(--teal-1))}
+.bar-line:nth-child(6n+2) .bar-fill{background:linear-gradient(90deg,var(--teal-1),var(--teal-3))}
+.bar-line:nth-child(6n+3) .bar-fill{background:linear-gradient(90deg,var(--teal-3),var(--teal-5))}
+.bar-line:nth-child(6n+4) .bar-fill{background:linear-gradient(90deg,var(--teal-2),var(--teal-5))}
+.bar-line:nth-child(6n+5) .bar-fill{background:linear-gradient(90deg,var(--teal-4),var(--teal-6))}
+.bar-line:nth-child(6n+6) .bar-fill{background:linear-gradient(90deg,var(--teal-1),var(--teal-4))}
+.monthly-chart{border-color:var(--line)}
+th{background:var(--surface-alt)}
+td,th{border-color:var(--line)}
+.notice{background:var(--notice);color:var(--ink)}
+.theme-toggle{display:inline-flex;align-items:center;gap:8px;min-height:42px;border:1px solid #7a999a;background:transparent;color:#fff;border-radius:9px;padding:9px 14px}
+.theme-toggle:hover{background:#ffffff20}
+.header-inner{max-width:950px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.header-inner h1{letter-spacing:-.04em}
+@media(max-width:600px){.header-inner{align-items:flex-start}.theme-toggle{font-size:13px;padding:8px 10px}}
+
+/* NeuroLog v7 — Modern Surgical layout */
+:root{--nav-active:#E1F4F1;--hero-card:#414D52}
+html[data-theme="dark"]{--nav-active:#244B4A;--hero-card:#35464A}
+body{line-height:1.5}
+header{padding:23px 24px 27px}
+.header-inner{max-width:1120px}
+.header-inner h1{font-size:32px;font-weight:800;letter-spacing:-.055em}
+.header-inner p{font-size:13px;opacity:.82}
+main{max-width:1120px;margin:20px auto;padding:0 20px}
+.card{border-radius:18px;padding:24px;box-shadow:0 8px 30px rgba(18,60,59,.045)}
+.app-nav{display:flex;gap:8px;flex-wrap:nowrap;margin:0 0 20px;padding:7px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 3px 12px rgba(0,0,0,.025)}
+.app-nav button{flex:1;margin:0;border-radius:10px;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;font-size:14px}
+.app-nav button.selected{background:var(--nav-active);color:var(--teal-1)}
+.app-nav .nav-icon{font-size:21px;font-weight:700;line-height:1}
+.app-nav button:hover{background:var(--surface-alt)}
+.app-nav button.selected:hover{background:var(--nav-active)}
+.dashboard-hero{background:var(--primary);color:#fff;border-radius:18px;padding:25px;display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}
+.dashboard-hero h2{margin:3px 0 5px;font-size:clamp(23px,3vw,32px);letter-spacing:-.04em}
+.dashboard-hero p{margin:0;color:#D3E5E4;font-size:14px}
+.eyebrow{font-size:11px;letter-spacing:.16em;color:#8DDBD2;font-weight:800}
+.hero-add{background:#36A6A0;color:#102526;min-height:48px;white-space:nowrap;border-radius:12px;padding:12px 20px}
+.kpi{border-radius:16px;padding:20px;background:var(--surface-alt)}
+.kpi strong{font-size:clamp(25px,3vw,35px);letter-spacing:-.045em}
+.chart-card{border-radius:16px;padding:20px}
+.chart-card h3{font-size:16px}
+button{border-radius:10px}
+input,select,textarea{border-radius:10px}
+@media(max-width:700px){
+  main{padding:0 12px;margin:14px auto 100px}
+  header{padding:16px 15px 19px}
+  .header-inner h1{font-size:26px}
+  .header-inner p{font-size:11px}
+  .theme-toggle{min-height:40px;white-space:nowrap}
+  .card{padding:16px;border-radius:15px}
+  .dashboard-hero{padding:19px;flex-direction:column;align-items:stretch;border-radius:15px}
+  .hero-add{width:100%;margin:0}
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .kpi{padding:14px}
+  .kpi strong{font-size:27px}
+  .app-nav{position:fixed;z-index:50;bottom:0;left:0;right:0;margin:0;border-radius:17px 17px 0 0;padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));box-shadow:0 -7px 24px rgba(0,0,0,.12);border-bottom:0}
+  .app-nav button{min-height:55px;flex-direction:column;gap:1px;font-size:11px;padding:5px 3px}
+  .app-nav .nav-icon{font-size:23px}
+  .dashboard-grid{grid-template-columns:minmax(0,1fr)}
+}
+/* v8 official logo and home-screen finishing touches */
+.brand{display:flex;align-items:center;gap:13px;min-width:0}
+.brand-logo{display:block;width:56px;height:56px;object-fit:cover;border-radius:14px;flex:none;box-shadow:0 3px 13px #0003}
+@media(max-width:700px){.brand{gap:9px}.brand-logo{width:43px;height:43px;border-radius:11px}.brand h1{font-size:25px}.brand p{max-width:200px}}
+@media(display-mode:standalone){body{overscroll-behavior-y:contain}}
+</style>
+<link rel="apple-touch-icon" href="/neurolog-apple-icon-v82.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/neurolog-apple-icon-v82.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/neurolog-icon-v82-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/neurolog-icon-v82-512.png">
+<link rel="manifest" href="/manifest.webmanifest?v=8.2">
+</head>
+<body>
+<header><div class="header-inner"><div class="brand"><img class="brand-logo" src="/neurolog-icon-v82-192.png" alt="NeuroLog gold-outlined teal brain logo" width="56" height="56"><div><h1>NeuroLog</h1><p>Neurosurgery residency · Operative case log</p></div></div><button class="theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()" aria-label="Switch to dark mode" aria-pressed="false">☾ Dark mode</button></div></header>
+<main>
+<div class="notice">
+Prototype only. Use fictional test data. Records are stored in this browser and are not encrypted by this prototype. Do not enter real patient information.
+</div>
+
+<nav class="app-nav" aria-label="Main navigation">
+<button type="button" data-tab="stats" onclick="tab('stats')"><span class="nav-icon" aria-hidden="true">▥</span><span>Dashboard</span></button>
+<button type="button" data-tab="log" onclick="tab('log')"><span class="nav-icon" aria-hidden="true">☷</span><span>Cases</span></button>
+<button type="button" data-tab="add" onclick="tab('add')"><span class="nav-icon" aria-hidden="true">＋</span><span>Add case</span></button>
+<button type="button" data-tab="export" onclick="tab('export')"><span class="nav-icon" aria-hidden="true">⇩</span><span>Export</span></button>
+</nav>
+
+<section id="log" class="panel">
+<div class="card">
+<h2>My cases</h2>
+<input id="search" placeholder="Search cases..." oninput="render()">
+<div class="tablewrap">
+<table>
+<thead><tr><th>Date</th><th>Subspecialty</th><th>Diagnosis</th><th>Procedure</th><th>Attending</th><th>Role</th><th>EPA</th><th></th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+<p id="empty">No cases yet. Add your first test case.</p>
+</div>
+</section>
+
+<section id="add" class="panel">
+<div class="card">
+<h2 id="formTitle">Add a case</h2><p class="hint">Enter core case information, then expand Advanced details if needed.</p>
+<form id="caseForm">
+<input type="hidden" id="editId">
+<div class="grid">
+<div class="field"><label for="initials">Patient initials / test code</label><input id="initials" placeholder="TEST-01" autocomplete="off"><p class="hint">Prototype: use fictional identifiers only.</p></div>
+<div class="field"><label for="dob">Date of birth</label><input id="dob" type="date"></div>
+<div class="field"><label for="date">Surgery date *</label><input id="date" type="date" required></div>
+<div class="field"><label for="attending">Attending *</label><select id="attending" required></select><button type="button" class="secondary" onclick="addAttending()">+ Add attending</button></div>
+<div class="field"><label for="sub">Subspecialty *</label><select id="sub" required onchange="updateOptions()"></select></div>
+<div class="field" id="diagnosisField"><label for="diagnosis">Detailed diagnosis *</label><select id="diagnosis" onchange="updateDiagnosisCustom()"></select></div>
+<div class="field" id="customDiagnosisField" hidden><label for="customDiagnosis">Custom diagnosis *</label><input id="customDiagnosis"></div>
+<div class="field"><label for="procedure">Procedure name *</label><select id="procedure" required onchange="updateCustom()"></select></div>
+<div class="field" id="customProcedureField" hidden><label for="customProcedure">Custom procedure *</label><input id="customProcedure"></div>
+<div class="field"><label for="role">Resident role *</label><select id="role" required><option value="">Select role</option><option>Main surgeon</option><option>First assist</option><option>Second assist</option><option>Observer</option></select></div>
+<div class="field wide"><label for="detailedProcedure">Detailed procedure</label><textarea id="detailedProcedure" rows="3" placeholder="Optional operative procedure details (no identifying information)"></textarea></div>
+</div>
+<details id="advancedDetails"><summary>Advanced details (optional)</summary>
+<div class="grid">
+<div class="field"><label for="epaLogged">EPA logged?</label><select id="epaLogged" onchange="toggleEPA()"><option value="">Not specified</option><option>Yes</option><option>No</option></select></div>
+<div class="field" id="epaField" hidden><label for="epaNumber">EPA number</label><select id="epaNumber"><option value="">Select EPA</option><option>EPA 1</option><option>EPA 2</option><option>EPA 3</option><option>EPA 4</option><option>EPA 5</option><option>EPA 6</option><option>EPA 7</option><option>EPA 8</option><option>EPA 9</option><option>EPA 10</option><option>Other / program-specific</option></select></div>
+<div class="field wide"><label for="complications">Complications</label><textarea id="complications" rows="2" placeholder="Optional complications or none"></textarea></div>
+<div class="field wide"><label for="approach">Surgical approach</label><textarea id="approach" rows="2" placeholder="Describe surgical approach"></textarea></div>
+<div class="field wide"><label for="notes">Procedure / learning notes</label><textarea id="notes" rows="3" placeholder="Optional learning reflections"></textarea></div>
+</div></details>
+<div class="actions"><button type="submit">Save case</button>
+<button type="button" class="secondary" onclick="resetForm()">Clear form</button></div>
+</form>
+</div>
+</section>
+
+<section id="stats" class="panel active">
+<div class="card">
+<div class="dashboard-hero"><div><div class="eyebrow">YOUR SURGICAL JOURNEY</div><h2>Residency dashboard</h2><p>Explore your operative experience and training progression.</p></div><button type="button" class="hero-add" onclick="resetForm();tab('add')">＋ Log new case</button></div>
+<p class="hint">Automatically calculated from saved cases. Use filters to explore your operative experience.</p>
+<div class="dashboard-controls">
+<div class="field"><label for="dashFrom">From date</label><input type="date" id="dashFrom" onchange="stats()"></div>
+<div class="field"><label for="dashTo">To date</label><input type="date" id="dashTo" onchange="stats()"></div>
+<div class="field"><label for="dashSub">Subspecialty</label><select id="dashSub" onchange="stats()"><option value="">All subspecialties</option></select></div>
+<button class="secondary" type="button" onclick="clearDashboardFilters()">Clear filters</button>
+</div>
+<div class="kpi-grid">
+<div class="kpi"><strong id="total">0</strong><span>Cases in selection</span></div>
+<div class="kpi"><strong id="mainSurgeon">0</strong><span>Main surgeon cases</span></div>
+<div class="kpi"><strong id="leadPercent">0%</strong><span>Main surgeon share</span></div>
+<div class="kpi"><strong id="epaPercent">0%</strong><span>EPA logged (all selected cases)</span></div>
+</div>
+<div class="dashboard-grid">
+<div class="chart-card"><h3>Monthly operative volume</h3><div id="monthlyChart"></div></div>
+<div class="chart-card"><h3>Cases by subspecialty</h3><div id="subStats"></div></div>
+<div class="chart-card"><h3>Most frequent procedures</h3><div id="procedureStats"></div></div>
+<div class="chart-card"><h3>Cases by attending</h3><div id="staffStats"></div></div>
+<div class="chart-card"><h3>Resident role distribution</h3><div id="roleStats"></div></div>
+<div class="chart-card"><h3>Role progression by month</h3><div id="roleProgression"></div><p class="chart-note">Monthly role mix, based on the role recorded for each case.</p></div>
+</div>
+<p class="dashboard-summary" id="dashboardSummary" aria-live="polite"></p>
+</div>
+</section>
+
+<section id="export" class="panel">
+<div class="card"><h2>Export logbook</h2>
+<p class="hint">Switching from a local HTML file to the installed web app creates separate browser storage. Export a JSON backup from your previous version and import it here to transfer your fictional cases.</p>
+<p>Export cases to a spreadsheet-compatible CSV file that opens in Excel.</p>
+<button onclick="exportCSV()">Export CSV for Excel</button>
+<button class="secondary" onclick="backup()">Backup data (JSON)</button>
+<p><small>Download backups regularly. JSON preserves the case records and attending list for restoration. CSV opens in Excel but cannot be restored using this importer.</small></p>
+<hr style="border:0;border-top:1px solid #dde4ee;margin:22px 0">
+<h3>Restore or transfer a backup</h3>
+<p>Choose a NeuroLog JSON backup from an earlier version (including v3/v4). Review the preview before importing. Existing records are kept by default.</p>
+<div class="field"><label for="importFile">Select JSON backup</label><input id="importFile" type="file" accept=".json,application/json" onchange="previewImport()"></div>
+<div id="importPreview" class="notice" aria-live="polite">No backup selected.</div>
+<div class="field"><label for="importMode">Import method</label>
+<select id="importMode" onchange="updateImportPreview()">
+<option value="merge">Merge: add new cases and keep existing cases (recommended)</option>
+<option value="replace">Replace: remove current cases and use backup instead</option>
+</select></div>
+<button id="importButton" type="button" onclick="applyImport()" disabled>Import selected backup</button>
+<p><small>Always export a fresh backup of your current log before replacing data. Backups containing patient identifiers are sensitive and should not be stored or transferred without institutional approval.</small></p>
+</div>
+</section>
+</main>
+
+<script>
+
+// Theme preference is independent of the case log's existing storage key.
+const themePreferenceKey="neurologThemeV6";
+function applyTheme(mode){
+  const dark=mode==="dark";
+  document.documentElement.setAttribute("data-theme",dark?"dark":"light");
+  const toggle=document.getElementById("themeToggle");
+  if(toggle){
+    toggle.textContent=dark?"☀ Light mode":"☾ Dark mode";
+    toggle.setAttribute("aria-label",dark?"Switch to light mode":"Switch to dark mode");
+    toggle.setAttribute("aria-pressed",String(dark));
+  }
+}
+function toggleTheme(){
+  const next=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";
+  applyTheme(next);
+  try{localStorage.setItem(themePreferenceKey,next);}catch(e){}
+}
+try{
+  const savedTheme=localStorage.getItem(themePreferenceKey);
+  applyTheme(savedTheme==="dark"||savedTheme==="light"?savedTheme:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"));
+}catch(e){applyTheme("light");}
+
+const staffDefault=[
+"Abdul Salam","Kaufmann","Silvaggio","Berrington","Almojuela",
+"Galdino","Dhaliwal","Beiko","McDonald","Drapeau","Kazina"
+];
+
+const subs=[
+"Brain trauma","Spine trauma","Oncology","Elective spine",
+"Vascular","Pediatric","Functional","EVD / LD","General","Other"
+];
+
+const diagnoses={
+"Brain trauma":["aSDH","EDH","ICH","IVH","Skull fracture","Penetrating cranial injury","Other"],
+"Spine trauma":["C-spine fracture","T-spine fracture","L-spine fracture","Odontoid fracture","Hangman fracture","Traumatic spinal cord compression","SCI","Cauda equina","Facet dislocation/subluxation","Spondylolisthesis","Spinal epidural hematoma","Other"],
+"Oncology":["Meningioma","GBM","Astrocytoma","Ependymoma","Glioma","Oligodendroglioma","Lymphoma","Pituitary adenoma","Craniopharyngioma","Epidermoid/dermoid cyst","Schwannoma","Metastasis","Other"],
+"Elective spine":["Cervical myelopathy","Cervical radiculopathy","Lumbar stenosis","Lumbar radiculopathy","DDD","Cervical disc herniation","Lumbar disc herniation","Spinal deformity","Spinal instability","Spinal tumor","Other"],
+"Vascular":["Aneurysm","Vascular malformation","Carotid stenosis","Trigeminal neuralgia","Hemifacial spasm","Other"],
+"Pediatric":["Hydrocephalus","Craniosynostosis","Chiari malformation","Trauma","Tumor","Other"],
+"Functional":["Parkinson disease","Essential tremor","Dystonia","Epilepsy","Pain","Other"],
+"General":["NPH","Hydrocephalus","Shunt malfunction","CSF leak","cSDH","Abscess/infection","Postoperative wound infection/dehiscence","Cranioplasty","Other"],
+"EVD / LD":[],
+"Other":["Other"]
+};
+
+const procedures={
+"Brain trauma":["Decompressive hemicraniectomy","Craniotomy for EDH evacuation","Craniotomy for aSDH evacuation","Elevation/repair of depressed skull fracture","Removal of intracranial foreign body","Other"],
+"Spine trauma":["ACDF","PCDF","TLIF","Corpectomy for fracture","Lumbar laminectomy","Lumbar microdiscectomy","PLIF","ALIF","Spinal deformity correction/fusion","Revision of construct","Removal of hardware","Perc fusion","Thoracic fusion","Other"],
+"Oncology":["Craniotomy for tumor debulking/resection","Stereotactic brain biopsy","Open brain biopsy","Endoscopic endonasal/TSS tumor resection","Other"],
+"Elective spine":["ACDF","PCDF","TLIF","Lumbar laminectomy","Lumbar microdiscectomy","PLIF","ALIF","Spinal deformity correction/fusion","Revision of construct","Removal of hardware","Perc fusion","Thoracic fusion","Other"],
+"Vascular":["Aneurysm clipping","AVM resection","dAVF disconnection","Cavernoma resection","Carotid endarterectomy","EC-IC bypass","MVD","Other"],
+"Pediatric":["VPS insertion","VPS revision","ETV ± CPC","EVD","Myelomeningocele repair","Craniosynostosis repair","Craniotomy for tumor resection","Other"],
+"Functional":["DBS","VNS","Temporal lobectomy","Callosotomy","Baclofen pump insertion/change","Battery change","Other"],
+"EVD / LD":["EVD","LD"],
+"General":["VPS","BH","Mini-craniotomy","Craniotomy","Wound washout/debridement","Other"],
+"Other":["Other"]
+};
+
+const key="neurosurgeryCaseLogV1"; // Keep original storage key so existing saved cases remain available in the same browser/file origin.
+let cases=[],staff=[...staffDefault];
+try{
+const saved=JSON.parse(localStorage.getItem(key)||"{}");
+cases=(saved.cases||[]).map(c=>({...c,attending:c.attending==="Almujuela"||c.attending==="Almuela"?"Almojuela":c.attending}));
+staff=[...new Set([...staff,...(saved.staff||[]).map(x=>x==="Almujuela"||x==="Almuela"?"Almojuela":x)])];
+}catch(e){}
+
+function persist(){
+localStorage.setItem(key,JSON.stringify({cases,staff}));
+}
+function tab(id){
+const panel=document.getElementById(id);
+if(!panel||!panel.classList.contains("panel"))return;
+document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===id));
+document.querySelectorAll(".app-nav button[data-tab]").forEach(b=>{
+const active=b.dataset.tab===id;
+b.classList.toggle("selected",active);
+if(active)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");
+});
+if(id==="stats")stats();
+window.scrollTo(0,0);
+}
+function fill(id,values,placeholder="Select"){
+const el=document.getElementById(id);
+el.innerHTML=`<option value="">${placeholder}</option>`+
+values.map(v=>`<option>${safe(v)}</option>`).join("");
+}
+function localDate(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");}
+function init(){
+fill("sub",subs,"Select subspecialty");
+fill("dashSub",subs,"All subspecialties");
+fill("attending",staff,"Select attending");
+document.getElementById("date").value=localDate();
+updateOptions();render();tab("stats");
+}
+function updateOptions(){
+const sub=document.getElementById("sub").value;
+const drain=sub==="EVD / LD";
+document.getElementById("diagnosisField").hidden=drain;
+document.getElementById("customDiagnosisField").hidden=true;
+fill("diagnosis",diagnoses[sub]||[],"Select diagnosis");
+fill("procedure",procedures[sub]||[],"Select procedure");
+document.getElementById("diagnosis").required=!drain&&sub!=="Other";
+document.getElementById("customDiagnosis").required=sub==="Other";
+document.getElementById("customDiagnosisField").hidden=sub!=="Other";
+updateDiagnosisCustom();updateCustom();
+}
+function updateDiagnosisCustom(){
+const sub=document.getElementById("sub").value;
+const custom=sub==="Other"||document.getElementById("diagnosis").value==="Other";
+document.getElementById("customDiagnosisField").hidden=!custom;
+document.getElementById("customDiagnosis").required=custom;
+}
+function updateCustom(){
+const sub=document.getElementById("sub").value;
+const other=document.getElementById("procedure").value==="Other"||sub==="Other";
+document.getElementById("customProcedureField").hidden=!other;
+document.getElementById("customProcedure").required=other;
+}
+function toggleEPA(){
+const yes=document.getElementById("epaLogged").value==="Yes";
+document.getElementById("epaField").hidden=!yes;
+if(!yes)document.getElementById("epaNumber").value="";
+}
+function addAttending(){
+const name=prompt("Enter new attending name:");
+if(!name||!name.trim())return;
+if(!staff.some(s=>s.toLowerCase()===name.trim().toLowerCase()))staff.push(name.trim());
+fill("attending",staff,"Select attending");
+document.getElementById("attending").value=name.trim();
+persist();
+}
+function resetForm(){
+document.getElementById("caseForm").reset();
+document.getElementById("editId").value="";
+document.getElementById("formTitle").textContent="Add a case";
+document.getElementById("date").value=localDate();
+document.getElementById("epaField").hidden=true;
+document.getElementById("advancedDetails").open=false;
+updateOptions();
+}
+document.getElementById("caseForm").addEventListener("submit",function(e){
+e.preventDefault();
+const sub=document.getElementById("sub").value;
+const dx=document.getElementById("diagnosis").value;
+const proc=document.getElementById("procedure").value;
+const id=document.getElementById("editId").value||String(Date.now());
+const item={
+id,
+initials:document.getElementById("initials").value.trim(),
+dob:document.getElementById("dob").value,
+date:document.getElementById("date").value,
+attending:document.getElementById("attending").value,
+sub,
+diagnosis:sub==="EVD / LD"?"":(dx==="Other"||sub==="Other"?document.getElementById("customDiagnosis").value.trim():dx),
+procedure:proc==="Other"||sub==="Other"?document.getElementById("customProcedure").value.trim():proc,
+role:document.getElementById("role").value,
+epa:document.getElementById("epaLogged").value,
+epaNumber:document.getElementById("epaLogged").value==="Yes"?document.getElementById("epaNumber").value:"",
+notes:document.getElementById("notes").value.trim(),
+detailedProcedure:document.getElementById("detailedProcedure").value.trim(),
+approach:document.getElementById("approach").value,
+complications:document.getElementById("complications").value
+};
+if(!item.date||!item.attending||!item.sub||!item.procedure||!item.role){
+alert("Please complete the required fields.");return;
+}
+if(sub!=="EVD / LD"&&!item.diagnosis){alert("Please choose or enter a diagnosis.");return;}
+const idx=cases.findIndex(c=>c.id===id);
+if(idx>=0)cases[idx]=item;else cases.push(item);
+persist();render();resetForm();tab("log");
+});
+function safe(v){return String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));}
+function render(){
+const q=document.getElementById("search").value.toLowerCase();
+const filtered=cases.filter(c=>JSON.stringify(c).toLowerCase().includes(q));
+document.getElementById("rows").innerHTML=filtered.map(c=>`<tr>
+<td>${safe(c.date||"")}</td><td>${safe(c.sub)}</td><td>${safe(c.diagnosis||"—")}</td>
+<td>${safe(c.procedure)}</td><td>${safe(c.attending)}</td><td>${safe(c.role)}</td>
+<td>${c.epa==="Yes"?"Logged":c.epa==="No"?"No":"—"}</td>
+<td><button onclick="editCase('${c.id}')">Edit</button><button onclick="removeCase('${c.id}')">Delete</button></td>
+</tr>`).join("");
+document.getElementById("empty").hidden=filtered.length>0;
+}
+function editCase(id){
+const c=cases.find(x=>x.id===id);if(!c)return;
+tab("add");document.getElementById("formTitle").textContent="Edit case";
+document.getElementById("editId").value=c.id;
+["initials","dob","date"].forEach(k=>document.getElementById(k).value=c[k]||"");
+document.getElementById("attending").value=c.attending;
+document.getElementById("sub").value=c.sub;updateOptions();
+if((diagnoses[c.sub]||[]).includes(c.diagnosis))document.getElementById("diagnosis").value=c.diagnosis;
+else if(c.diagnosis){document.getElementById("diagnosis").value="Other";document.getElementById("customDiagnosis").value=c.diagnosis;document.getElementById("customDiagnosisField").hidden=false;document.getElementById("customDiagnosis").required=true;}
+if((procedures[c.sub]||[]).includes(c.procedure))document.getElementById("procedure").value=c.procedure;
+else{document.getElementById("procedure").value="Other";document.getElementById("customProcedure").value=c.procedure;document.getElementById("customProcedureField").hidden=false;}
+document.getElementById("role").value=c.role;
+document.getElementById("epaLogged").value=c.epa;toggleEPA();
+document.getElementById("epaNumber").value=c.epaNumber||"";
+document.getElementById("notes").value=c.notes||"";
+document.getElementById("detailedProcedure").value=c.detailedProcedure||"";
+["approach","complications"].forEach(k=>document.getElementById(k).value=c[k]||"");
+document.getElementById("advancedDetails").open=!!(c.epa||c.epaNumber||c.notes||c.approach||c.complications);
+updateDiagnosisCustom();
+}
+function removeCase(id){
+if(!confirm("Delete this case?"))return;
+cases=cases.filter(c=>c.id!==id);persist();render();stats();
+}
+// Dashboard charts are drawn using built-in HTML/CSS: no internet or third-party libraries required.
+function clearDashboardFilters(){
+["dashFrom","dashTo","dashSub"].forEach(id=>document.getElementById(id).value="");stats();
+}
+function countsBy(list,field){
+const map=new Map();list.forEach(c=>{const label=String(c[field]||"Not specified");map.set(label,(map.get(label)||0)+1);});
+return [...map.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+}
+function barChart(id,entries,limit=10){
+const el=document.getElementById(id);const shown=entries.slice(0,limit);
+if(!shown.length){el.innerHTML='<p class="empty-chart">No cases in this selection.</p>';return;}
+const max=Math.max(...shown.map(x=>x[1]),1);
+el.innerHTML=shown.map(([label,count])=>`<div class="bar-line"><span class="bar-label" title="${safe(label)}">${safe(label)}</span><div class="bar-track" role="img" aria-label="${safe(label)}: ${count} cases"><div class="bar-fill" style="width:${count/max*100}%"></div></div><strong class="bar-count">${count}</strong></div>`).join("");
+}
+function monthKey(date){return /^\d{4}-\d{2}-\d{2}$/.test(date||"")?date.slice(0,7):null;}
+function monthlyVolume(list){
+const el=document.getElementById("monthlyChart");const counts=new Map();
+list.forEach(c=>{const k=monthKey(c.date);if(k)counts.set(k,(counts.get(k)||0)+1);});
+if(!counts.size){el.innerHTML='<p class="empty-chart">No dated cases in this selection.</p>';return;}
+const keys=[...counts.keys()].sort();const max=Math.max(...counts.values(),1);
+// Show all months between first and last case, including zero-case months, capped at the latest 18.
+let [year,month]=keys[0].split('-').map(Number);const last=keys[keys.length-1];const months=[];
+while(`${year}-${String(month).padStart(2,'0')}`<=last && months.length<240){months.push(`${year}-${String(month).padStart(2,'0')}`);month++;if(month===13){month=1;year++;}}
+const shown=months.slice(-18);
+el.innerHTML='<div class="monthly-chart">'+shown.map(k=>{const n=counts.get(k)||0;const short=new Date(k+'-01T12:00:00').toLocaleDateString(undefined,{month:'short'});return `<div class="month-col" title="${safe(k)}: ${n} cases"><span class="month-value">${n}</span><div class="month-bar" style="height:${n?Math.max(5,n/max*125):0}px"></div><span class="month-label">${short}<br>${k.slice(2,4)}</span></div>`;}).join('')+'</div>';
+if(months.length>18)el.innerHTML+='<p class="chart-note">Showing the latest 18 months in this selection.</p>';
+}
+const roleColors={"Main surgeon":"var(--teal-1)","First assist":"var(--teal-2)","Second assist":"var(--teal-3)","Observer":"var(--teal-4)","Other":"var(--teal-5)"};
+function roleProgress(list){
+const el=document.getElementById('roleProgression');const groups=new Map();
+list.forEach(c=>{const m=monthKey(c.date);if(!m)return;if(!groups.has(m))groups.set(m,[]);groups.get(m).push(c);});
+if(!groups.size){el.innerHTML='<p class="empty-chart">No dated cases in this selection.</p>';return;}
+const roles=['Main surgeon','First assist','Second assist','Observer','Other'];
+const months=[...groups.keys()].sort().slice(-12);
+let html='<div class="role-legend">'+roles.map(r=>`<span><i style="background:${roleColors[r]}"></i>${r}</span>`).join('')+'</div>';
+html+=months.map(m=>{const list=groups.get(m);const total=list.length;const segments=roles.map(r=>{const n=list.filter(c=>(roles.includes(c.role)?c.role:'Other')===r).length;return n?`<div class="stacked-segment" title="${r}: ${n} (${Math.round(n/total*100)}%)" style="width:${n/total*100}%;background:${roleColors[r]}"></div>`:'';}).join('');return `<div class="stacked-row"><div class="stacked-title"><span>${safe(m)}</span><span>${total} cases</span></div><div class="stacked-track" role="img" aria-label="${safe(m)} role distribution">${segments}</div></div>`;}).join('');
+el.innerHTML=html;
+}
+function stats(){
+const from=document.getElementById('dashFrom').value;
+const to=document.getElementById('dashTo').value;
+const sub=document.getElementById('dashSub').value;
+const selected=cases.filter(c=>(!from||(c.date||'')>=from)&&(!to||(c.date||'')<=to)&&(!sub||c.sub===sub));
+const n=selected.length,main=selected.filter(c=>c.role==='Main surgeon').length,epa=selected.filter(c=>c.epa==='Yes').length;
+document.getElementById('total').textContent=n;
+document.getElementById('mainSurgeon').textContent=main;
+document.getElementById('leadPercent').textContent=n?Math.round(main/n*100)+'%':'0%';
+document.getElementById('epaPercent').textContent=n?Math.round(epa/n*100)+'%':'0%';
+monthlyVolume(selected);
+barChart('subStats',countsBy(selected,'sub'));
+barChart('procedureStats',countsBy(selected,'procedure'));
+barChart('staffStats',countsBy(selected,'attending'));
+barChart('roleStats',countsBy(selected,'role'));
+roleProgress(selected);
+document.getElementById('dashboardSummary').textContent=`Showing ${n} of ${cases.length} total cases. EPA percentage counts cases marked Yes; blank or No entries are not counted as logged.`;
+}
+function exportCSV(){
+const headers=["Patient initials","DOB","Surgery date","Attending","Subspecialty","Detailed diagnosis","Procedure name","Detailed procedure","Resident role","EPA logged","EPA #","Complications","Surgical approach","Procedure / learning notes"];
+const fields=["initials","dob","date","attending","sub","diagnosis","procedure","detailedProcedure","role","epa","epaNumber","complications","approach","notes"];
+const quote=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+const csv=[headers.map(quote).join(","),...cases.map(c=>fields.map(k=>quote(c[k])).join(","))].join("\r\n");
+const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+a.download="NeuroLog-v8-cases.csv";a.click();URL.revokeObjectURL(a.href);
+}
+let pendingImport=null;
+function normalizeStaffName(name){
+return name==="Almujuela"||name==="Almuela"?"Almojuela":name;
+}
+function validateImport(data){
+if(!data||typeof data!=="object"||Array.isArray(data)||!Array.isArray(data.cases)||!Array.isArray(data.staff))
+throw Error("Not a recognized NeuroLog backup: expected cases and staff arrays.");
+if(data.cases.length>50000)throw Error("This backup is too large for this browser prototype.");
+const ids=new Set();
+const imported=data.cases.map((c,i)=>{
+if(!c||typeof c!=="object"||Array.isArray(c))throw Error("Invalid case at position "+(i+1)+".");
+for(const field of ["id","date","attending","sub","procedure","role"]){
+if(typeof c[field]!=="string"||!c[field].trim())throw Error("Case "+(i+1)+" is missing "+field+".");
+}
+if(ids.has(c.id))throw Error("Backup has duplicate case IDs: "+c.id);
+ids.add(c.id);
+for(const [k,v] of Object.entries(c)){
+if(v!==null&&typeof v!=="string")throw Error("Unexpected field type for "+k+" in case "+(i+1)+".");
+}
+return {...c,attending:normalizeStaffName(c.attending)};
+});
+const importedStaff=data.staff.map((name,i)=>{
+if(typeof name!=="string"||!name.trim())throw Error("Invalid attending at position "+(i+1)+".");
+return normalizeStaffName(name.trim());
+});
+return {cases:imported,staff:importedStaff};
+}
+async function previewImport(){
+const el=document.getElementById("importFile");
+pendingImport=null;
+document.getElementById("importButton").disabled=true;
+if(!el.files.length){updateImportPreview();return;}
+try{
+const file=el.files[0];
+if(file.size>20*1024*1024)throw Error("File exceeds the 20 MB import limit.");
+const parsed=JSON.parse(await file.text());
+pendingImport=validateImport(parsed);
+updateImportPreview();
+}catch(err){
+document.getElementById("importPreview").textContent="Import not available: "+err.message;
+}
+}
+function updateImportPreview(){
+const preview=document.getElementById("importPreview");
+const button=document.getElementById("importButton");
+button.disabled=!pendingImport;
+if(!pendingImport){preview.textContent="No valid backup selected.";return;}
+const existing=new Set(cases.map(c=>c.id));
+const duplicates=pendingImport.cases.filter(c=>existing.has(c.id)).length;
+const mode=document.getElementById("importMode").value;
+preview.textContent=`Backup contains ${pendingImport.cases.length} cases and ${pendingImport.staff.length} attending entries. Current log: ${cases.length} cases. ${duplicates} case IDs already exist. `+
+(mode==="merge"?`Merge will add ${pendingImport.cases.length-duplicates} new cases; existing cases with matching IDs stay unchanged.`:`Replace will overwrite all ${cases.length} current cases with the ${pendingImport.cases.length} backup cases.`);
+}
+function applyImport(){
+if(!pendingImport)return;
+const mode=document.getElementById("importMode").value;
+const message=mode==="replace"?
+"REPLACE all current cases with this backup? This cannot be undone unless you have a separate backup.":
+"Merge backup cases into the current log? Existing case IDs will be kept unchanged.";
+if(!confirm(message))return;
+const priorCases=cases,priorStaff=staff;
+try{
+const existing=new Set(cases.map(c=>c.id));
+cases=mode==="replace"?[...pendingImport.cases]:[...cases,...pendingImport.cases.filter(c=>!existing.has(c.id))];
+staff=[...new Set([...staffDefault,...(mode==="replace"?[]:staff),...pendingImport.staff,...cases.map(c=>c.attending)])];
+persist();
+fill("attending",staff,"Select attending");
+render();stats();resetForm();
+const count=cases.length;
+pendingImport=null;
+document.getElementById("importFile").value="";
+updateImportPreview();
+alert("Import complete. Your log now has "+count+" cases. Download a new JSON backup to preserve the result.");
+}catch(err){
+cases=priorCases;staff=priorStaff;
+alert("Import failed; your current data was left unchanged. "+err.message);
+}
+}
+function backup(){
+const blob=new Blob([JSON.stringify({cases,staff},null,2)],{type:"application/json"});
+const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+a.download="NeuroLog-backup.json";a.click();URL.revokeObjectURL(a.href);
+}
+init();
+</script>
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js?v=8.2').catch(err => console.warn('Offline setup unavailable:',err)));
+}
+</script>
+</body>
+</html>

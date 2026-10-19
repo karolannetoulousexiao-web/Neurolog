@@ -1,0 +1,37 @@
+{
+  "id": "./",
+  "name": "NeuroLog \u2014 Neurosurgery Case Log",
+  "short_name": "NeuroLog",
+  "description": "Offline-capable residency operative case log prototype. Fictional data only.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#30343B",
+  "theme_color": "#30343B",
+  "icons": [
+    {
+      "src": "./neurolog-apple-icon-v82.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./neurolog-icon-v82-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./neurolog-icon-v82-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./neurolog-icon-v82-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
