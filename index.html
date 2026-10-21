@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="NeuroLog">
-<title>NeuroLog | Neurosurgical Case Log</title>
+<title>NeuroLog Cloud | Neurosurgical Case Log</title>
 <style>
 body{font:16px Arial,sans-serif;background:#f3f5f9;color:#172b4d;margin:0}
 header{background:#172b4d;color:white;padding:22px} header h1{margin:0;font-size:30px} header p{margin:6px 0 0;opacity:.85}
@@ -131,6 +131,28 @@ input,select,textarea{border-radius:10px}
 .brand-logo{display:block;width:56px;height:56px;object-fit:cover;border-radius:14px;flex:none;box-shadow:0 3px 13px #0003}
 @media(max-width:700px){.brand{gap:9px}.brand-logo{width:43px;height:43px;border-radius:11px}.brand h1{font-size:25px}.brand p{max-width:200px}}
 @media(display-mode:standalone){body{overscroll-behavior-y:contain}}
+/* iPhone Home Screen safe-area refinements: preserve notch and home-indicator space. */
+html{min-height:100%;background:var(--bg)}
+body{min-height:100vh;min-height:100dvh}
+@media(max-width:700px){
+  header{
+    padding-top:calc(16px + env(safe-area-inset-top, 0px));
+    padding-left:calc(15px + env(safe-area-inset-left, 0px));
+    padding-right:calc(15px + env(safe-area-inset-right, 0px));
+  }
+  .app-nav{
+    padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px));
+    background:var(--surface);
+    border-radius:17px 17px 0 0;
+  }
+  /* Leave room for the fixed tab bar even on phones with a home indicator. */
+  main{padding-bottom:calc(90px + env(safe-area-inset-bottom, 0px))}
+}
+@supports(padding:max(0px)){
+  @media(max-width:700px){
+    .app-nav{padding-left:max(8px,env(safe-area-inset-left, 0px));padding-right:max(8px,env(safe-area-inset-right, 0px))}
+  }
+}
 </style>
 <link rel="apple-touch-icon" href="./neurolog-apple-icon-v82.png">
 <link rel="apple-touch-icon" sizes="180x180" href="./neurolog-apple-icon-v82.png">
@@ -141,10 +163,17 @@ input,select,textarea{border-radius:10px}
 <body>
 <header><div class="header-inner"><div class="brand"><img class="brand-logo" src="./neurolog-icon-v82-192.png" alt="NeuroLog gold-outlined teal brain logo" width="56" height="56"><div><h1>NeuroLog</h1><p>Neurosurgery residency · Operative case log</p></div></div><button class="theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()" aria-label="Switch to dark mode" aria-pressed="false">☾ Dark mode</button></div></header>
 <main>
-<div class="notice">
-Privacy notice: Use fictional or fully de-identified test data only. Records are stored locally in this browser without encryption. Do not enter identifiable patient information.
-</div>
 
+<section id="cloudAuth" class="card" style="max-width:520px;margin:20px auto">
+<h2>NeuroLog Cloud</h2><p class="hint">Sign in to access your private cloud log. Use fictional case information only.</p>
+<form id="authForm"><div class="field"><label for="cloudEmail">Email</label><input id="cloudEmail" type="email" autocomplete="email" required></div>
+<div class="field"><label for="cloudPassword">Password</label><input id="cloudPassword" type="password" autocomplete="current-password" minlength="8" required></div>
+<button type="submit">Sign in</button><button type="button" class="secondary" id="cloudSignup">Create account</button></form>
+<p id="authMessage" aria-live="polite" class="hint"></p></section>
+<div id="cloudBar" class="card" hidden style="padding:12px 18px;display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+<div><strong id="cloudUser"></strong><div id="syncStatus" class="hint" aria-live="polite">Connecting…</div></div>
+<button class="secondary" type="button" id="cloudLogout">Sign out</button></div>
+<div id="cloudApp" hidden>
 <nav class="app-nav" aria-label="Main navigation">
 <button type="button" data-tab="stats" onclick="tab('stats')"><span class="nav-icon" aria-hidden="true">▥</span><span>Dashboard</span></button>
 <button type="button" data-tab="log" onclick="tab('log')"><span class="nav-icon" aria-hidden="true">☷</span><span>Cases</span></button>
@@ -155,14 +184,26 @@ Privacy notice: Use fictional or fully de-identified test data only. Records are
 <section id="log" class="panel">
 <div class="card">
 <h2>My cases</h2>
-<input id="search" placeholder="Search cases..." oninput="render()">
+<input id="search" placeholder="Search cases..." oninput="render()" aria-label="Search all case fields">
+<div class="grid" style="margin:14px 0" aria-label="Case filters">
+<div class="field"><label for="caseFrom">Surgery date from</label><input id="caseFrom" type="date" onchange="render()"></div>
+<div class="field"><label for="caseTo">Surgery date to</label><input id="caseTo" type="date" onchange="render()"></div>
+<div class="field"><label for="caseSub">Subspecialty</label><select id="caseSub" onchange="updateCaseFilterChoices();render()"><option value="">All subspecialties</option></select></div>
+<div class="field"><label for="caseDiagnosis">Diagnosis</label><select id="caseDiagnosis" onchange="render()"><option value="">All diagnoses</option></select></div>
+<div class="field"><label for="caseProcedure">Procedure</label><select id="caseProcedure" onchange="render()"><option value="">All procedures</option></select></div>
+<div class="field"><label for="caseAttending">Attending</label><select id="caseAttending" onchange="render()"><option value="">All attendings</option></select></div>
+<div class="field"><label for="caseRole">Resident role</label><select id="caseRole" onchange="render()"><option value="">All roles</option></select></div>
+<div class="field"><label for="caseSort">Sort cases by</label><select id="caseSort" onchange="render()"><option value="date-desc">Surgery date (newest first)</option><option value="date-asc">Surgery date (oldest first)</option><option value="sub-asc">Subspecialty (A–Z)</option><option value="sub-desc">Subspecialty (Z–A)</option><option value="diagnosis-asc">Diagnosis (A–Z)</option><option value="diagnosis-desc">Diagnosis (Z–A)</option><option value="procedure-asc">Procedure (A–Z)</option><option value="procedure-desc">Procedure (Z–A)</option><option value="attending-asc">Attending (A–Z)</option><option value="attending-desc">Attending (Z–A)</option><option value="role-asc">Role (A–Z)</option><option value="role-desc">Role (Z–A)</option></select></div>
+</div>
+<button class="secondary" type="button" onclick="clearCaseFilters()">Clear filters</button>
+<p class="hint" id="caseResultCount" aria-live="polite"></p>
 <div class="tablewrap">
 <table>
 <thead><tr><th>Date</th><th>Subspecialty</th><th>Diagnosis</th><th>Procedure</th><th>Attending</th><th>Role</th><th>EPA</th><th></th></tr></thead>
 <tbody id="rows"></tbody>
 </table>
 </div>
-<p id="empty">No cases yet. Add your first test case.</p>
+<p id="empty">No cases yet. Add your first case.</p>
 </div>
 </section>
 
@@ -172,8 +213,8 @@ Privacy notice: Use fictional or fully de-identified test data only. Records are
 <form id="caseForm">
 <input type="hidden" id="editId">
 <div class="grid">
-<div class="field"><label for="initials">Patient initials / test code</label><input id="initials" placeholder="TEST-01" autocomplete="off"><p class="hint">Use fictional identifiers only.</p></div>
-<div class="field"><label for="dob">Date of birth</label><input id="dob" type="date"></div>
+<div class="field"><label for="initials">Case reference code</label><input id="initials" placeholder="TEST-01" autocomplete="off" maxlength="40"><p class="hint">Use an invented reference only; no patient initials or chart numbers.</p></div>
+<div class="field"><label for="dob">Date of birth</label><input id="dob" type="date" autocomplete="bday" aria-describedby="dobHelp"><p class="hint" id="dobHelp">Tap to select a date using your phone’s date picker, just like Surgery date.</p></div>
 <div class="field"><label for="date">Surgery date *</label><input id="date" type="date" required></div>
 <div class="field"><label for="attending">Attending *</label><select id="attending" required></select><button type="button" class="secondary" onclick="addAttending()">+ Add attending</button></div>
 <div class="field"><label for="sub">Subspecialty *</label><select id="sub" required onchange="updateOptions()"></select></div>
@@ -228,27 +269,27 @@ Privacy notice: Use fictional or fully de-identified test data only. Records are
 
 <section id="export" class="panel">
 <div class="card"><h2>Export logbook</h2>
-<p class="hint">Switching from a local HTML file to the installed web app creates separate browser storage. Export a JSON backup from your previous version and import it here to transfer your fictional cases.</p>
+<p class="hint">Export a copy of your current cloud logbook. Existing local backups are not automatically uploaded.</p>
 <p>Export cases to a spreadsheet-compatible CSV file that opens in Excel.</p>
 <button onclick="exportCSV()">Export CSV for Excel</button>
 <button class="secondary" onclick="backup()">Backup data (JSON)</button>
-<p><small>Download backups regularly. JSON preserves the case records and attending list for restoration. CSV opens in Excel but cannot be restored using this importer.</small></p>
-<hr style="border:0;border-top:1px solid #dde4ee;margin:22px 0">
-<h3>Restore or transfer a backup</h3>
-<p>Choose a NeuroLog JSON backup from an earlier version (including v3/v4). Review the preview before importing. Existing records are kept by default.</p>
+<p><small>JSON backups preserve the cases and attending list. Export a backup before importing.</small></p>
+<hr style="border:0;border-top:1px solid var(--line);margin:22px 0">
+<h3>Import JSON backup</h3>
+<p>Import a NeuroLog JSON file into your signed-in account. The default is to merge new cases without changing existing ones.</p>
 <div class="field"><label for="importFile">Select JSON backup</label><input id="importFile" type="file" accept=".json,application/json" onchange="previewImport()"></div>
 <div id="importPreview" class="notice" aria-live="polite">No backup selected.</div>
-<div class="field"><label for="importMode">Import method</label>
-<select id="importMode" onchange="updateImportPreview()">
-<option value="merge">Merge: add new cases and keep existing cases (recommended)</option>
-<option value="replace">Replace: remove current cases and use backup instead</option>
-</select></div>
-<button id="importButton" type="button" onclick="applyImport()" disabled>Import selected backup</button>
-<p><small>Always export a fresh backup of your current log before replacing data. Backups containing patient identifiers are sensitive and should not be stored or transferred without institutional approval.</small></p>
+<div class="field"><label for="importMode">Import method</label><select id="importMode" onchange="updateImportPreview()"><option value="merge">Merge — add missing cases; keep existing cases unchanged</option></select></div>
+<div class="field"><label><input id="importFictional" type="checkbox" style="width:auto;min-height:unset" onchange="updateImportPreview()"> I confirm this file contains only fictional test cases and no real patient information.</label></div>
+<button id="importButton" type="button" onclick="applyImport()" disabled>Import to my cloud account</button>
+<p class="hint" id="importStatus" aria-live="polite"></p>
+<p><small>Do not import actual operative records, even with initials removed, until institutional privacy and security approval is obtained. Exact surgery dates and clinical descriptions may identify patients.</small></p>
 </div>
 </section>
+</div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 
 // Theme preference is independent of the case log's existing storage key.
@@ -275,20 +316,21 @@ try{
 
 const staffDefault=[
 "Abdul Salam","Kaufmann","Silvaggio","Berrington","Almojuela",
-"Galdino","Dhaliwal","Beiko","McDonald","Drapeau","Kazina"
+"Galdino","Dhaliwal","Beiko","McDonald","Drapeau","Kazina","Fomenko"
 ];
 
 const subs=[
 "Brain trauma","Spine trauma","Oncology","Elective spine",
-"Vascular","Pediatric","Functional","EVD / LD","General","Other"
+"Vascular","IR","Pediatric","Functional","EVD / LD","General","Other"
 ];
 
 const diagnoses={
 "Brain trauma":["aSDH","EDH","ICH","IVH","Skull fracture","Penetrating cranial injury","Other"],
 "Spine trauma":["C-spine fracture","T-spine fracture","L-spine fracture","Odontoid fracture","Hangman fracture","Traumatic spinal cord compression","SCI","Cauda equina","Facet dislocation/subluxation","Spondylolisthesis","Spinal epidural hematoma","Other"],
-"Oncology":["Meningioma","GBM","Astrocytoma","Ependymoma","Glioma","Oligodendroglioma","Lymphoma","Pituitary adenoma","Craniopharyngioma","Epidermoid/dermoid cyst","Schwannoma","Metastasis","Other"],
+"Oncology":["Meningioma","GBM","Astrocytoma","Ependymoma","Glioma","Oligodendroglioma","Lymphoma","Pituitary adenoma","Craniopharyngioma","Epidermoid/dermoid cyst","Schwannoma","Metastasis","Brain lesion NYD","Other"],
 "Elective spine":["Cervical myelopathy","Cervical radiculopathy","Lumbar stenosis","Lumbar radiculopathy","DDD","Cervical disc herniation","Lumbar disc herniation","Spinal deformity","Spinal instability","Spinal tumor","Other"],
 "Vascular":["Aneurysm","Vascular malformation","Carotid stenosis","Trigeminal neuralgia","Hemifacial spasm","Other"],
+"IR":["Carotid stenosis","Vascular malformation","Aneurysm","Stroke","Diagnostic testing","AVM","dAVF","Moya moya","cSDH","Other"],
 "Pediatric":["Hydrocephalus","Craniosynostosis","Chiari malformation","Trauma","Tumor","Other"],
 "Functional":["Parkinson disease","Essential tremor","Dystonia","Epilepsy","Pain","Other"],
 "General":["NPH","Hydrocephalus","Shunt malfunction","CSF leak","cSDH","Abscess/infection","Postoperative wound infection/dehiscence","Cranioplasty","Other"],
@@ -302,6 +344,7 @@ const procedures={
 "Oncology":["Craniotomy for tumor debulking/resection","Stereotactic brain biopsy","Open brain biopsy","Endoscopic endonasal/TSS tumor resection","Other"],
 "Elective spine":["ACDF","PCDF","TLIF","Lumbar laminectomy","Lumbar microdiscectomy","PLIF","ALIF","Spinal deformity correction/fusion","Revision of construct","Removal of hardware","Perc fusion","Thoracic fusion","Other"],
 "Vascular":["Aneurysm clipping","AVM resection","dAVF disconnection","Cavernoma resection","Carotid endarterectomy","EC-IC bypass","MVD","Other"],
+"IR":["DSA","Stent","Coil","WEB","Flow diverter","EMMA","EVT","Other"],
 "Pediatric":["VPS insertion","VPS revision","ETV ± CPC","EVD","Myelomeningocele repair","Craniosynostosis repair","Craniotomy for tumor resection","Other"],
 "Functional":["DBS","VNS","Temporal lobectomy","Callosotomy","Baclofen pump insertion/change","Battery change","Other"],
 "EVD / LD":["EVD","LD"],
@@ -309,17 +352,9 @@ const procedures={
 "Other":["Other"]
 };
 
-const key="neurosurgeryCaseLogV1"; // Keep original storage key so existing saved cases remain available in the same browser/file origin.
+// Do not load or upload existing browser case records.
 let cases=[],staff=[...staffDefault];
-try{
-const saved=JSON.parse(localStorage.getItem(key)||"{}");
-cases=(saved.cases||[]).map(c=>({...c,attending:c.attending==="Almujuela"||c.attending==="Almuela"?"Almojuela":c.attending}));
-staff=[...new Set([...staff,...(saved.staff||[]).map(x=>x==="Almujuela"||x==="Almuela"?"Almojuela":x)])];
-}catch(e){}
-
-function persist(){
-localStorage.setItem(key,JSON.stringify({cases,staff}));
-}
+function persist(){ /* attending preferences stay in memory; cases use cloud API */ }
 function tab(id){
 const panel=document.getElementById(id);
 if(!panel||!panel.classList.contains("panel"))return;
@@ -391,15 +426,15 @@ document.getElementById("epaField").hidden=true;
 document.getElementById("advancedDetails").open=false;
 updateOptions();
 }
-document.getElementById("caseForm").addEventListener("submit",function(e){
+document.getElementById("caseForm").addEventListener("submit",async function(e){
 e.preventDefault();
 const sub=document.getElementById("sub").value;
 const dx=document.getElementById("diagnosis").value;
 const proc=document.getElementById("procedure").value;
-const id=document.getElementById("editId").value||String(Date.now());
+const id=document.getElementById("editId").value||crypto.randomUUID();
 const item={
 id,
-initials:document.getElementById("initials").value.trim(),
+testCode:document.getElementById("initials").value.trim(),
 dob:document.getElementById("dob").value,
 date:document.getElementById("date").value,
 attending:document.getElementById("attending").value,
@@ -414,18 +449,45 @@ detailedProcedure:document.getElementById("detailedProcedure").value.trim(),
 approach:document.getElementById("approach").value,
 complications:document.getElementById("complications").value
 };
+if(item.dob){
+  const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(item.dob);
+  const valid=match&&Number(match[1])>=1000&&Number(match[1])<=9999&&Number(match[2])>=1&&Number(match[2])<=12&&Number(match[3])>=1&&Number(match[3])<=31&&(()=>{const d=new Date(Date.UTC(+match[1],+match[2]-1,+match[3]));return d.getUTCFullYear()===+match[1]&&d.getUTCMonth()===+match[2]-1&&d.getUTCDate()===+match[3];})();
+  if(!valid){alert("Enter DOB in YYYY-MM-DD format, such as 1990-04-15.");document.getElementById("dob").focus();return;}
+}
 if(!item.date||!item.attending||!item.sub||!item.procedure||!item.role){
 alert("Please complete the required fields.");return;
 }
 if(sub!=="EVD / LD"&&!item.diagnosis){alert("Please choose or enter a diagnosis.");return;}
-const idx=cases.findIndex(c=>c.id===id);
-if(idx>=0)cases[idx]=item;else cases.push(item);
-persist();render();resetForm();tab("log");
+try { await cloudSave(item); resetForm();tab("log"); }
+catch(err){ alert("Cloud save failed. Case was not saved: "+err.message); }
 });
 function safe(v){return String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));}
+function updateCaseFilterChoices(){
+  const selectedSub=document.getElementById('caseSub').value;
+  const relevant=selectedSub?cases.filter(c=>c.sub===selectedSub):cases;
+  const options=[['caseSub','sub',cases,'All subspecialties'],['caseDiagnosis','diagnosis',relevant,'All diagnoses'],['caseProcedure','procedure',relevant,'All procedures'],['caseAttending','attending',relevant,'All attendings'],['caseRole','role',relevant,'All roles']];
+  options.forEach(([id,field,source,placeholder])=>{
+    const el=document.getElementById(id);const prior=el.value;
+    const values=[...new Set(source.map(c=>String(c[field]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    el.innerHTML='<option value="">'+placeholder+'</option>'+values.map(v=>'<option value="'+safe(v)+'">'+safe(v)+'</option>').join('');
+    if(values.includes(prior))el.value=prior;
+  });
+}
+function clearCaseFilters(){
+  ['search','caseFrom','caseTo','caseSub','caseDiagnosis','caseProcedure','caseAttending','caseRole'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('caseSort').value='date-desc';updateCaseFilterChoices();render();
+}
 function render(){
-const q=document.getElementById("search").value.toLowerCase();
-const filtered=cases.filter(c=>JSON.stringify(c).toLowerCase().includes(q));
+updateCaseFilterChoices();
+const q=document.getElementById('search').value.toLowerCase().trim();
+const from=document.getElementById('caseFrom').value,to=document.getElementById('caseTo').value;
+const sub=document.getElementById('caseSub').value,diagnosis=document.getElementById('caseDiagnosis').value;
+const procedure=document.getElementById('caseProcedure').value,attending=document.getElementById('caseAttending').value,role=document.getElementById('caseRole').value;
+const filtered=cases.filter(c=>(!q||JSON.stringify(c).toLowerCase().includes(q))&&(!from||(c.date||'')>=from)&&(!to||(c.date||'')<=to)&&(!sub||c.sub===sub)&&(!diagnosis||c.diagnosis===diagnosis)&&(!procedure||c.procedure===procedure)&&(!attending||c.attending===attending)&&(!role||c.role===role));
+const sort=document.getElementById('caseSort').value;
+const [field,direction]=sort.split('-');
+filtered.sort((a,b)=>{const x=String(a[field]||''),y=String(b[field]||'');const cmp=field==='date'?x.localeCompare(y):x.localeCompare(y,undefined,{sensitivity:'base',numeric:true});return (direction==='desc'?-1:1)*cmp||String(a.id).localeCompare(String(b.id));});
+document.getElementById('caseResultCount').textContent=`Showing ${filtered.length} of ${cases.length} cases`;
 document.getElementById("rows").innerHTML=filtered.map(c=>`<tr>
 <td>${safe(c.date||"")}</td><td>${safe(c.sub)}</td><td>${safe(c.diagnosis||"—")}</td>
 <td>${safe(c.procedure)}</td><td>${safe(c.attending)}</td><td>${safe(c.role)}</td>
@@ -438,7 +500,8 @@ function editCase(id){
 const c=cases.find(x=>x.id===id);if(!c)return;
 tab("add");document.getElementById("formTitle").textContent="Edit case";
 document.getElementById("editId").value=c.id;
-["initials","dob","date"].forEach(k=>document.getElementById(k).value=c[k]||"");
+document.getElementById("initials").value=c.testCode||"";
+["dob","date"].forEach(k=>document.getElementById(k).value=c[k]||"");
 document.getElementById("attending").value=c.attending;
 document.getElementById("sub").value=c.sub;updateOptions();
 if((diagnoses[c.sub]||[]).includes(c.diagnosis))document.getElementById("diagnosis").value=c.diagnosis;
@@ -454,9 +517,9 @@ document.getElementById("detailedProcedure").value=c.detailedProcedure||"";
 document.getElementById("advancedDetails").open=!!(c.epa||c.epaNumber||c.notes||c.approach||c.complications);
 updateDiagnosisCustom();
 }
-function removeCase(id){
-if(!confirm("Delete this case?"))return;
-cases=cases.filter(c=>c.id!==id);persist();render();stats();
+async function removeCase(id){
+if(!confirm("Delete this fictional case from the cloud?"))return;
+try{await cloudDelete(id);}catch(err){alert("Delete failed: "+err.message);}
 }
 // Dashboard charts are drawn using built-in HTML/CSS: no internet or third-party libraries required.
 function clearDashboardFilters(){
@@ -515,8 +578,8 @@ roleProgress(selected);
 document.getElementById('dashboardSummary').textContent=`Showing ${n} of ${cases.length} total cases. EPA percentage counts cases marked Yes; blank or No entries are not counted as logged.`;
 }
 function exportCSV(){
-const headers=["Patient initials","DOB","Surgery date","Attending","Subspecialty","Detailed diagnosis","Procedure name","Detailed procedure","Resident role","EPA logged","EPA #","Complications","Surgical approach","Procedure / learning notes"];
-const fields=["initials","dob","date","attending","sub","diagnosis","procedure","detailedProcedure","role","epa","epaNumber","complications","approach","notes"];
+const headers=["Date of birth","Surgery date","Attending","Subspecialty","Detailed diagnosis","Procedure name","Detailed procedure","Resident role","EPA logged","EPA #","Complications","Surgical approach","Procedure / learning notes"];
+const fields=["dob","date","attending","sub","diagnosis","procedure","detailedProcedure","role","epa","epaNumber","complications","approach","notes"];
 const quote=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
 const csv=[headers.map(quote).join(","),...cases.map(c=>fields.map(k=>quote(c[k])).join(","))].join("\r\n");
 const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
@@ -524,94 +587,182 @@ const a=document.createElement("a");a.href=URL.createObjectURL(blob);
 a.download="NeuroLog-v8-cases.csv";a.click();URL.revokeObjectURL(a.href);
 }
 let pendingImport=null;
-function normalizeStaffName(name){
-return name==="Almujuela"||name==="Almuela"?"Almojuela":name;
-}
+function normalizeStaffName(name){return name==="Almujuela"||name==="Almuela"?"Almojuela":name;}
 function validateImport(data){
-if(!data||typeof data!=="object"||Array.isArray(data)||!Array.isArray(data.cases)||!Array.isArray(data.staff))
-throw Error("Not a recognized NeuroLog backup: expected cases and staff arrays.");
-if(data.cases.length>50000)throw Error("This backup is too large for this browser.");
-const ids=new Set();
-const imported=data.cases.map((c,i)=>{
-if(!c||typeof c!=="object"||Array.isArray(c))throw Error("Invalid case at position "+(i+1)+".");
-for(const field of ["id","date","attending","sub","procedure","role"]){
-if(typeof c[field]!=="string"||!c[field].trim())throw Error("Case "+(i+1)+" is missing "+field+".");
-}
-if(ids.has(c.id))throw Error("Backup has duplicate case IDs: "+c.id);
-ids.add(c.id);
-for(const [k,v] of Object.entries(c)){
-if(v!==null&&typeof v!=="string")throw Error("Unexpected field type for "+k+" in case "+(i+1)+".");
-}
-return {...c,attending:normalizeStaffName(c.attending)};
-});
-const importedStaff=data.staff.map((name,i)=>{
-if(typeof name!=="string"||!name.trim())throw Error("Invalid attending at position "+(i+1)+".");
-return normalizeStaffName(name.trim());
-});
-return {cases:imported,staff:importedStaff};
+ if(!data||typeof data!=="object"||Array.isArray(data)||!Array.isArray(data.cases)||!Array.isArray(data.staff))
+   throw Error("Not a recognized NeuroLog backup: expected cases and staff arrays.");
+ if(data.cases.length>5000)throw Error("Import limit is 5,000 cases per file.");
+ const ids=new Set();
+ const imported=data.cases.map((c,i)=>{
+   if(!c||typeof c!=="object"||Array.isArray(c))throw Error("Invalid case at position "+(i+1));
+   for(const field of ["id","date","attending","sub","procedure","role"]){
+     if(typeof c[field]!=="string"||!c[field].trim())throw Error("Case "+(i+1)+" is missing "+field);
+   }
+   if(ids.has(c.id))throw Error("Duplicate case ID in file: "+c.id);
+   ids.add(c.id);
+   if(!subs.includes(c.sub))throw Error("Unrecognized subspecialty at case "+(i+1)+": "+c.sub);
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(c.date))throw Error("Invalid surgery date at case "+(i+1));
+   for(const [k,v] of Object.entries(c))if(v!==null&&typeof v!=="string")throw Error("Invalid field "+k+" at case "+(i+1));
+   // Whitelist the fields NeuroLog understands; do not transfer legacy initials.
+   const keys=["id","testCode","dob","date","attending","sub","diagnosis","procedure","role","epa","epaNumber","notes","detailedProcedure","approach","complications"];
+   const clean=Object.fromEntries(keys.map(k=>[k,typeof c[k]==="string"?c[k]:""]));
+   clean.attending=normalizeStaffName(clean.attending);
+   return clean;
+ });
+ const importedStaff=data.staff.map((name,i)=>{
+   if(typeof name!=="string"||!name.trim())throw Error("Invalid attending at position "+(i+1));
+   return normalizeStaffName(name.trim());
+ });
+ return {cases:imported,staff:importedStaff};
 }
 async function previewImport(){
-const el=document.getElementById("importFile");
-pendingImport=null;
-document.getElementById("importButton").disabled=true;
-if(!el.files.length){updateImportPreview();return;}
-try{
-const file=el.files[0];
-if(file.size>20*1024*1024)throw Error("File exceeds the 20 MB import limit.");
-const parsed=JSON.parse(await file.text());
-pendingImport=validateImport(parsed);
-updateImportPreview();
-}catch(err){
-document.getElementById("importPreview").textContent="Import not available: "+err.message;
-}
+ pendingImport=null;
+ const file=document.getElementById("importFile").files[0];
+ if(!file){updateImportPreview();return;}
+ try{
+   if(file.size>20*1024*1024)throw Error("File exceeds the 20 MB import limit.");
+   pendingImport=validateImport(JSON.parse(await file.text()));
+   updateImportPreview();
+ }catch(err){document.getElementById("importPreview").textContent="Cannot import: "+err.message;document.getElementById("importButton").disabled=true;}
 }
 function updateImportPreview(){
-const preview=document.getElementById("importPreview");
-const button=document.getElementById("importButton");
-button.disabled=!pendingImport;
-if(!pendingImport){preview.textContent="No valid backup selected.";return;}
-const existing=new Set(cases.map(c=>c.id));
-const duplicates=pendingImport.cases.filter(c=>existing.has(c.id)).length;
-const mode=document.getElementById("importMode").value;
-preview.textContent=`Backup contains ${pendingImport.cases.length} cases and ${pendingImport.staff.length} attending entries. Current log: ${cases.length} cases. ${duplicates} case IDs already exist. `+
-(mode==="merge"?`Merge will add ${pendingImport.cases.length-duplicates} new cases; existing cases with matching IDs stay unchanged.`:`Replace will overwrite all ${cases.length} current cases with the ${pendingImport.cases.length} backup cases.`);
+ const preview=document.getElementById("importPreview"),button=document.getElementById("importButton");
+ button.disabled=!pendingImport||!cloudUser||!document.getElementById("importFictional").checked;
+ if(!pendingImport){preview.textContent="No valid backup selected.";return;}
+ const existing=new Set(cases.map(c=>c.id));
+ const duplicates=pendingImport.cases.filter(c=>existing.has(c.id)).length;
+ preview.textContent=`File: ${pendingImport.cases.length} cases, ${pendingImport.staff.length} attendings. Already in your cloud log: ${duplicates} matching IDs. New cases to add: ${pendingImport.cases.length-duplicates}. Existing cases will not be changed.`;
 }
-function applyImport(){
-if(!pendingImport)return;
-const mode=document.getElementById("importMode").value;
-const message=mode==="replace"?
-"REPLACE all current cases with this backup? This cannot be undone unless you have a separate backup.":
-"Merge backup cases into the current log? Existing case IDs will be kept unchanged.";
-if(!confirm(message))return;
-const priorCases=cases,priorStaff=staff;
-try{
-const existing=new Set(cases.map(c=>c.id));
-cases=mode==="replace"?[...pendingImport.cases]:[...cases,...pendingImport.cases.filter(c=>!existing.has(c.id))];
-staff=[...new Set([...staffDefault,...(mode==="replace"?[]:staff),...pendingImport.staff,...cases.map(c=>c.attending)])];
-persist();
-fill("attending",staff,"Select attending");
-render();stats();resetForm();
-const count=cases.length;
-pendingImport=null;
-document.getElementById("importFile").value="";
-updateImportPreview();
-alert("Import complete. Your log now has "+count+" cases. Download a new JSON backup to preserve the result.");
-}catch(err){
-cases=priorCases;staff=priorStaff;
-alert("Import failed; your current data was left unchanged. "+err.message);
-}
+async function applyImport(){
+ if(!pendingImport||!cloudUser||!document.getElementById("importFictional").checked)return;
+ if(!navigator.onLine){alert("Connect to the internet before importing.");return;}
+ const userId=cloudUser.id;
+ const existing=new Set(cases.map(c=>c.id));
+ const fresh=pendingImport.cases.filter(c=>!existing.has(c.id));
+ if(!fresh.length){alert("No new cases to import.");return;}
+ if(!confirm(`Add ${fresh.length} fictional cases to your cloud account? Existing cases will be kept.`))return;
+ const button=document.getElementById("importButton"),status=document.getElementById("importStatus");
+ button.disabled=true;
+ let done=0;
+ try{
+   // Upsert in small batches; on failure, report partial progress rather than claiming a rollback.
+   // Never overwrite an existing record: use insert and skip unique-ID conflicts.
+   for(let i=0;i<fresh.length;i+=25){
+     if(!cloudUser||cloudUser.id!==userId)throw Error("Account changed during import.");
+     const batch=fresh.slice(i,i+25).map(c=>({user_id:userId,id:c.id,case_data:c}));
+     const {error}=await cloud.from('cases').upsert(batch,{onConflict:'user_id,id',ignoreDuplicates:true});
+     if(error)throw error;
+     done+=batch.length;
+     status.textContent=`Uploaded ${done} of ${fresh.length} new cases…`;
+   }
+   status.textContent=`Import completed: ${done} cases uploaded. Refreshing log…`;
+   pendingImport=null;
+   document.getElementById("importFile").value="";
+   document.getElementById("importFictional").checked=false;
+   await cloudFetch();updateImportPreview();
+   status.textContent=`Import completed: ${done} cases uploaded to your account.`;
+ }catch(err){
+   status.textContent=`Import stopped after ${done} uploaded cases. Some cases may have been saved. ${err.message} Refresh before retrying.`;
+   await cloudFetch();updateImportPreview();
+ }
 }
 function backup(){
 const blob=new Blob([JSON.stringify({cases,staff},null,2)],{type:"application/json"});
 const a=document.createElement("a");a.href=URL.createObjectURL(blob);
 a.download="NeuroLog-backup.json";a.click();URL.revokeObjectURL(a.href);
 }
-init();
-</script>
-<script>
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=8.3').catch(err => console.warn('Offline setup unavailable:',err)));
+
+// Supabase public client configuration; never put service_role or secret keys here.
+const CLOUD_URL="https://cuwolkmmhqbwgkgwvrja.supabase.co";
+const CLOUD_PUBLISHABLE_KEY="sb_publishable__CoLb21eatwU8hm33WPQKg_4IU9r8-Y";
+let cloud=null,cloudUser=null,cloudBusy=false,cloudTimer=null;
+const authMsg=document.getElementById('authMessage');
+function cloudStatus(message){document.getElementById('syncStatus').textContent=message;}
+function showCloudAuth(user){
+  document.getElementById('cloudAuth').hidden=!!user;
+  document.getElementById('cloudApp').hidden=!user;
+  const bar=document.getElementById('cloudBar');bar.hidden=!user;bar.style.display=user?'flex':'none';
+  document.getElementById('cloudUser').textContent=user?.email||'';
 }
+async function cloudFetch(){
+ if(!cloudUser||cloudBusy)return;
+ cloudBusy=true;cloudStatus('Syncing…');
+ try{
+  const {data,error}=await cloud.from('cases').select('id,case_data').eq('user_id',cloudUser.id).order('updated_at',{ascending:false});
+  if(error)throw error;
+  cases=(data||[]).map(row=>({...row.case_data,id:row.id}));
+  staff=[...new Set([...staffDefault,...cases.map(c=>c.attending).filter(Boolean)])];
+  fill('attending',staff,'Select attending');render();stats();
+  cloudStatus('Synced · '+new Date().toLocaleTimeString());
+ }catch(err){cloudStatus('Sync failed · '+err.message);}
+ finally{cloudBusy=false;}
+}
+async function cloudSave(item){
+ if(!cloudUser)throw Error('Sign in first');
+ if(!navigator.onLine)throw Error('Offline: reconnect before saving');
+ cloudBusy=true;cloudStatus('Saving…');
+ try{
+  // Strip legacy direct identifiers if any were introduced through code changes.
+  const safeItem={...item};delete safeItem.initials;
+  const {error}=await cloud.from('cases').upsert({user_id:cloudUser.id,id:item.id,case_data:safeItem,updated_at:new Date().toISOString()},{onConflict:'user_id,id'});
+  if(error)throw error;
+ }finally{cloudBusy=false;}
+ await cloudFetch();
+}
+async function cloudDelete(id){
+ if(!cloudUser)throw Error('Sign in first');
+ if(!navigator.onLine)throw Error('Offline: reconnect before deleting');
+ cloudBusy=true;cloudStatus('Deleting…');
+ try{const {error}=await cloud.from('cases').delete().eq('user_id',cloudUser.id).eq('id',id);if(error)throw error;}
+ finally{cloudBusy=false;}
+ await cloudFetch();
+}
+async function cloudSession(session){
+ const next=session?.user||null;
+ if(cloudUser?.id===next?.id)return;
+ cloudUser=next;cases=[];staff=[...staffDefault];render();stats();showCloudAuth(next);
+ if(cloudTimer){clearInterval(cloudTimer);cloudTimer=null;}
+ if(next){await cloudFetch();cloudTimer=setInterval(()=>{if(!document.hidden)cloudFetch();},15000);}
+}
+async function cloudBoot(){
+ showCloudAuth(null);
+ if(!window.supabase?.createClient){authMsg.textContent='Supabase library could not load. Check your connection and refresh.';return;}
+ cloud=window.supabase.createClient(CLOUD_URL,CLOUD_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ const {data,error}=await cloud.auth.getSession();
+ if(error)authMsg.textContent=error.message;
+ await cloudSession(data?.session);
+ cloud.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>cloudSession(session),0);});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)cloudFetch();});
+}
+document.getElementById('authForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!cloud)return;
+ authMsg.textContent='Signing in…';
+ const email=document.getElementById('cloudEmail').value.trim();
+ const password=document.getElementById('cloudPassword').value;
+ const {data,error}=await cloud.auth.signInWithPassword({email,password});
+ authMsg.textContent=error?error.message:'';
+ if(!error)await cloudSession(data.session);
+});
+document.getElementById('cloudSignup').addEventListener('click',async()=>{
+ if(!cloud)return;
+ const email=document.getElementById('cloudEmail').value.trim();
+ const password=document.getElementById('cloudPassword').value;
+ if(!email||password.length<8){authMsg.textContent='Enter a valid email and a password of at least 8 characters.';return;}
+ authMsg.textContent='Creating account…';
+ const {data,error}=await cloud.auth.signUp({email,password});
+ authMsg.textContent=error?error.message:(data.session?'Account created. Signing in…':'Check your email for a confirmation link.');
+ if(data.session)await cloudSession(data.session);
+});
+document.getElementById('cloudLogout').addEventListener('click',async()=>{
+ if(!cloud)return;
+ const {error}=await cloud.auth.signOut();
+ if(error){cloudStatus('Sign out failed: '+error.message);return;}
+ await cloudSession(null);document.getElementById('cloudPassword').value='';
+});
+
+init();
+cloudBoot();
 </script>
+
 </body>
 </html>
